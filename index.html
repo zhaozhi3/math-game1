@@ -2,29 +2,55 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>因式分解挑戰 - 帶提示教學版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>因式分解挑戰 - 手機優化版</title>
     <style>
-        :root { --x-s: 90px; --u-s: 36px; }
-        body { font-family: "Microsoft JhengHei", sans-serif; background: #ecf0f1; text-align: center; margin: 0; padding: 0; }
-        #stat-bar { background: #34495e; color: white; padding: 15px; display: flex; justify-content: space-around; font-size: 18px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        #game-container { position: relative; width: 90vw; height: 55vh; max-width: 800px; margin: 15px auto; background: white; border: 3px solid #2c3e50; border-radius: 12px; overflow: hidden; }
+        /* 變數設定：手機上自動縮小尺寸 */
+        :root { --x-s: 70px; --u-s: 28px; }
+        @media (min-width: 600px) { :root { --x-s: 100px; --u-s: 40px; } }
+
+        body { 
+            font-family: "Microsoft JhengHei", sans-serif; 
+            background: #ecf0f1; margin: 0; padding: 0;
+            overflow: hidden; /* 防止手機晃動 */
+            position: fixed; width: 100%; height: 100%;
+        }
+
+        #stat-bar { 
+            background: #34495e; color: white; padding: 10px; 
+            display: flex; justify-content: space-around; font-size: 14px; 
+        }
+
+        #game-container { 
+            position: relative; width: 95vw; height: 65vh; 
+            margin: 5px auto; background: white; 
+            border: 2px solid #2c3e50; border-radius: 10px; 
+            overflow: hidden; touch-action: none; /* 重要：防止瀏覽器手勢干擾 */
+        }
         
-        /* 方塊樣式 */
-        .block { position: absolute; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border-radius: 4px; z-index: 10; user-select: none; border: 1px solid rgba(0,0,0,0.1); }
+        .block { 
+            position: absolute; display: flex; align-items: center; 
+            justify-content: center; color: white; font-weight: bold; 
+            border-radius: 4px; z-index: 10; user-select: none;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+        }
         .x2 { width: var(--x-s); height: var(--x-s); background: #3498db; }
         .unit { width: var(--u-s); height: var(--u-s); background: #e74c3c; }
-        .x-tile { background: #f1c40f; color: #333; cursor: pointer; }
+        .x-tile { background: #f1c40f; color: #333; }
         .x-v { width: var(--u-s); height: var(--x-s); }
         .x-h { width: var(--x-s); height: var(--u-s); }
 
-        /* 提示框樣式 */
-        #hint-box { color: #e67e22; font-weight: bold; margin: 10px; min-height: 25px; font-size: 18px; }
-        #result-banner { font-size: 28px; color: #27ae60; font-weight: bold; margin: 10px; }
+        #hint-box { color: #e67e22; font-size: 14px; margin: 5px; height: 20px; font-weight: bold; }
+        #result-banner { font-size: 20px; color: #27ae60; font-weight: bold; height: 30px; }
         
-        button { padding: 12px 28px; font-size: 18px; cursor: pointer; background: #2c3e50; color: white; border: none; border-radius: 8px; margin: 5px; }
-        .win-glow { animation: pulse 0.5s infinite alternate; box-shadow: 0 0 20px #2ecc71 !important; border: 2px solid white; }
-        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.03); } }
+        .btn-group { display: flex; justify-content: center; gap: 10px; }
+        button { 
+            padding: 10px 20px; font-size: 16px; cursor: pointer; 
+            background: #2c3e50; color: white; border: none; border-radius: 5px;
+        }
+
+        .win-glow { animation: pulse 0.5s infinite alternate; border: 2px solid #fff; }
+        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.05); } }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -36,11 +62,11 @@
 
     <div id="game-container"></div>
 
-    <div id="hint-box">💡 拖曳方塊拼成長方形，右鍵(或點擊)可旋轉 x</div>
+    <div id="hint-box">💡 點擊黃色方塊可旋轉</div>
     <div id="result-banner"></div>
 
-    <div id="ctrls">
-        <button onclick="checkWin()">檢查答案</button>
+    <div class="btn-group">
+        <button onclick="checkWin()">檢查</button>
         <button id="next-btn" style="display:none; background: #27ae60;" onclick="nextLevel()">下一題</button>
     </div>
 
@@ -50,62 +76,62 @@
 
     <script>
         const levels = [
-            {p:2, q:1}, {p:3, q:1}, {p:2, q:2}, {p:4, q:1}, {p:3, q:2}
+            {p:2, q:1}, {p:3, q:1}, {p:2, q:2}, {p:4, q:1}, {p:3, q:2},
+            {p:5, q:1}, {p:4, q:2}, {p:3, q:3}, {p:5, q:2}, {p:4, q:3}
         ];
-        let currentIdx = 0, seconds = 0, timerInterval;
+        let currentIdx = 0, seconds = 0;
 
         function initLevel() {
             const q = levels[currentIdx];
+            const containerW = $("#game-container").width();
+            const containerH = $("#game-container").height();
+
             $("#target-eq").text(`x² + ${q.p + q.q}x + ${q.p * q.q}`);
             $("#game-container").empty();
             $("#result-banner").empty();
-            $("#hint-box").text("💡 提示：試著將 x 方塊分別放在 x² 的右側與下方。");
+            $("#hint-box").text("💡 點擊黃色方塊可旋轉").css("color", "#e67e22");
             $("#next-btn").hide();
 
-            $("<div class='block x2' id='main-x'>x²</div>").css({top: 50, left: 50}).appendTo("#game-container");
+            // 1. 生成 x2 (放在左上角附近)
+            $("<div class='block x2' id='main-x'>x²</div>").css({top: 20, left: 20}).appendTo("#game-container");
 
+            // 2. 生成 x (限制在螢幕內)
             for(let i=0; i < (q.p + q.q); i++) {
                 $(`<div class="block x-tile x-v">x</div>`)
-                    .css({ top: 50 + Math.random()*200, left: 200 + Math.random()*300 })
+                    .css({ 
+                        top: Math.random() * (containerH - 120) + 50, 
+                        left: Math.random() * (containerW - 100) + 50 
+                    })
                     .appendTo("#game-container")
-                    .on('mousedown touchend', function(e) {
-                        if (e.type === 'mousedown' && e.button !== 2) return;
-                        $(this).toggleClass("x-v").toggleClass("x-h");
-                    });
+                    .on('click', function() { $(this).toggleClass("x-v").toggleClass("x-h"); });
             }
 
+            // 3. 生成 1
             for(let i=0; i < (q.p * q.q); i++) {
-                $("<div class='block unit'>1</div>").css({top: 250 + Math.random()*150, left: 200 + Math.random()*300}).appendTo("#game-container");
+                $("<div class='block unit'>1</div>")
+                    .css({ 
+                        top: Math.random() * (containerH - 80) + 50, 
+                        left: Math.random() * (containerW - 80) + 50 
+                    })
+                    .appendTo("#game-container");
             }
-            $(".block").draggable({ containment: "#game-container", snap: ".block", snapTolerance: 10 });
+            $(".block").draggable({ containment: "parent", snap: ".block", snapTolerance: 8 });
         }
 
         function checkWin() {
             const q = levels[currentIdx];
-            const xTiles = $(".x-tile");
             const vCount = $(".x-v").length;
             const hCount = $(".x-h").length;
 
-            // 提示邏輯判斷
             if ((vCount === q.p && hCount === q.q) || (vCount === q.q && hCount === q.p)) {
-                // 方向正確，檢查是否靠攏 (這裡用簡化的成功判定)
-                $("#hint-box").text("✨ 方向正確！請確保所有方塊緊密貼齊成一個大長方形。");
-                
-                // 模擬成功 (在實際教學中，可讓學生展示給老師看，或按此按鈕確認)
-                completeLevel(q);
+                $(".block").addClass("win-glow").draggable("disable");
+                $("#hint-box").text("🎊 完美拼合！");
+                $("#result-banner").html(`答案：(x + ${q.p})(x + ${q.q})`);
+                $("#next-btn").show();
             } else {
-                // 方向錯誤提示
-                $("#hint-box").text(`❌ 提示：你需要將 ${q.p} 個 x 轉為垂直，${q.q} 個 x 轉為水平（或反之）。`);
+                $("#hint-box").text(`❌ 提示：需 ${q.p} 直 ${q.q} 橫 (或反之)`);
                 $("#hint-box").css("color", "#e74c3c");
-                setTimeout(() => $("#hint-box").css("color", "#e67e22"), 1000);
             }
-        }
-
-        function completeLevel(q) {
-            $(".block").addClass("win-glow").draggable("disable");
-            $("#hint-box").text("🎊 完美拼合！");
-            $("#result-banner").html(`解析結果：(x + ${q.p})(x + ${q.q})`);
-            $("#next-btn").show();
         }
 
         function nextLevel() { currentIdx = (currentIdx + 1) % levels.length; initLevel(); }
