@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>因式分解甜點屋 2.0 🍬</title>
+    <title>因式分解甜點屋 3.0 (全方正版) 🍬</title>
     <style>
-        :root { --x-s: 100px; --u-s: 40px; } /* 微調尺寸以求方正 */
+        /* 1. 幾何正義：調整尺寸與圓角，追求完美契合 */
+        :root { --x-s: 100px; --u-s: 40px; }
         @media (min-width: 800px) { :root { --x-s: 120px; --u-s: 48px; } }
 
         body { 
@@ -28,29 +29,31 @@
             background-size: 30px 30px;
         }
         
-        /* 糖果方塊樣式：變得更方正 */
+        /* 2. 方塊生動樣式：全體方正化 */
         .block { 
             position: absolute; display: flex; align-items: center; justify-content: center; 
             color: white; font-weight: bold; z-index: 10;
             cursor: grab; border: 3px solid rgba(255,255,255,0.4);
             box-shadow: 0 5px 0px rgba(0,0,0,0.1);
             transition: transform 0.2s, box-shadow 0.2s;
+            border-radius: 6px; /* 統一極小圓角，維持 Q 彈感但不影響幾何形狀 */
         }
         .block:active { cursor: grabbing; transform: scale(1.05); box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
 
         /* x^2: 藍莓巧克力 (方正) */
-        .x2 { width: var(--x-s); height: var(--x-s); background: #71b1ff; font-size: 26px; border-radius: 8px; }
+        .x2 { width: var(--x-s); height: var(--x-s); background: #71b1ff; font-size: 26px; }
         /* x: 檸檬糖棒 (方正矩形) */
-        .x-tile { background: #ffd93d; color: #856404; font-size: 20px; border-radius: 6px; } /* 極微小圓角 */
+        .x-tile { background: #ffd93d; color: #856404; font-size: 20px; }
         .x-v { width: var(--u-s); height: var(--x-s); }
         .x-h { width: var(--x-s); height: var(--u-s); }
-        /* 1: 草莓軟糖 (圓形) */
-        .unit { width: var(--u-s); height: var(--u-s); background: #ff6b6b; border-radius: 50%; font-size: 16px; }
+        /* 1: 草莓軟糖 (方正小方塊) <- 修正重點 */
+        .unit { width: var(--u-s); height: var(--u-s); background: #ff6b6b; font-size: 16px; }
 
         /* 成功特效 */
         .win-glow { 
             animation: candy-pulse 0.5s infinite alternate; 
             box-shadow: 0 0 25px #ff5c8d !important;
+            border: 4px solid #ff5c8d !important;
         }
         @keyframes candy-pulse { from { transform: scale(1); } to { transform: scale(1.03); } }
 
@@ -76,7 +79,7 @@
     <div id="game-container"></div>
 
     <div id="footer">
-        <div id="hint-text">輕點糖果棒旋轉，拼成方正的長方形喔！🍭</div>
+        <div id="hint-text">輕點檸檬糖棒轉向，拼成方正的大長方形喔！🍭</div>
         <button id="check-btn" onclick="checkWin()">包裝糖果 (檢查)</button>
         <button id="next-btn" style="display:none;" onclick="nextLevel()">做下一份！✨</button>
     </div>
@@ -102,10 +105,12 @@
             $("#game-container").empty();
             $("#next-btn").hide();
             $("#check-btn").show();
-            $("#hint-text").text("輕點糖果棒旋轉，拼成方正的長方形喔！🍭").css("color", "#ff85a1");
+            $("#hint-text").text("輕點檸檬糖棒轉向，拼成方正的大長方形喔！🍭").css("color", "#ff85a1");
 
+            // 生成核心巧克力 (x^2)
             $("<div class='block x2' id='main-x2'>x²</div>").css({top: 40, left: 40}).appendTo("#game-container");
 
+            // 生成檸檬糖棒 (x)
             for(let i=0; i < (q.p + q.q); i++) {
                 let $x = $(`<div class="block x-tile x-v">x</div>`)
                     .css({ top: Math.random()*(ch-150)+50, left: Math.random()*(cw-200)+150 })
@@ -113,10 +118,12 @@
                 bindCandyClick($x);
             }
 
+            // 生成草莓軟糖小方塊 (1)
             for(let i=0; i < (q.p * q.q); i++) {
                 $("<div class='block unit'>1</div>").css({top: Math.random()*(ch-100)+50, left: Math.random()*(cw-200)+150 }).appendTo("#game-container");
             }
 
+            // 啟動磁吸拖曳
             $(".block").draggable({ containment: "parent", snap: ".block", snapTolerance: 15 });
         }
 
