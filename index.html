@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>因式分解甜點屋 🍬</title>
+    <title>因式分解甜點屋 2.0 🍬</title>
     <style>
-        :root { --x-s: 90px; --u-s: 38px; }
-        @media (min-width: 800px) { :root { --x-s: 110px; --u-s: 46px; } }
+        :root { --x-s: 100px; --u-s: 40px; } /* 微調尺寸以求方正 */
+        @media (min-width: 800px) { :root { --x-s: 120px; --u-s: 48px; } }
 
         body { 
             font-family: "Comic Sans MS", "Chalkboard SE", "Microsoft JhengHei", sans-serif; 
@@ -14,50 +14,46 @@
             display: flex; flex-direction: column; height: 100vh;
         }
 
-        /* 粉嫩標題區 */
         #header { 
             background: #ffebf2; padding: 15px; text-align: center;
             border-bottom: 4px solid #ffc2d4; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
-        #target-eq { font-size: 28px; color: #ff5c8d; font-weight: bold; text-shadow: 2px 2px 0px white; }
+        #target-eq { font-size: 28px; color: #ff5c8d; font-weight: bold; }
 
-        /* 遊戲區域：粉藍色格子 */
         #game-container { 
-            position: relative; flex-grow: 1; width: 95vw; max-width: 800px;
+            position: relative; flex-grow: 1; width: 95vw; max-width: 900px;
             margin: 15px auto; background: #ffffff; border: 6px solid #ffc2d4;
-            border-radius: 30px; overflow: hidden;
+            border-radius: 20px; overflow: hidden;
             background-image: radial-gradient(#ffecf2 2px, transparent 2px);
             background-size: 30px 30px;
         }
         
-        /* 糖果方塊樣式 */
+        /* 糖果方塊樣式：變得更方正 */
         .block { 
             position: absolute; display: flex; align-items: center; justify-content: center; 
-            color: white; font-weight: bold; border-radius: 12px; z-index: 10;
+            color: white; font-weight: bold; z-index: 10;
             cursor: grab; border: 3px solid rgba(255,255,255,0.4);
-            box-shadow: 0 6px 0px rgba(0,0,0,0.1);
-            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 5px 0px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        .block:active { cursor: grabbing; transform: scale(1.1) rotate(3deg); }
+        .block:active { cursor: grabbing; transform: scale(1.05); box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
 
-        /* x^2: 藍莓巧克力 */
-        .x2 { width: var(--x-s); height: var(--x-s); background: #71b1ff; font-size: 26px; }
-        /* x: 檸檬糖棒 */
-        .x-tile { background: #ffd93d; color: #856404; font-size: 20px; }
-        .x-v { width: var(--u-s); height: var(--x-s); border-radius: 20px; }
-        .x-h { width: var(--x-s); height: var(--u-s); border-radius: 20px; }
-        /* 1: 草莓軟糖 */
+        /* x^2: 藍莓巧克力 (方正) */
+        .x2 { width: var(--x-s); height: var(--x-s); background: #71b1ff; font-size: 26px; border-radius: 8px; }
+        /* x: 檸檬糖棒 (方正矩形) */
+        .x-tile { background: #ffd93d; color: #856404; font-size: 20px; border-radius: 6px; } /* 極微小圓角 */
+        .x-v { width: var(--u-s); height: var(--x-s); }
+        .x-h { width: var(--x-s); height: var(--u-s); }
+        /* 1: 草莓軟糖 (圓形) */
         .unit { width: var(--u-s); height: var(--u-s); background: #ff6b6b; border-radius: 50%; font-size: 16px; }
 
-        /* 成功特效：閃閃發光 */
+        /* 成功特效 */
         .win-glow { 
-            animation: candy-bounce 0.5s infinite alternate; 
-            box-shadow: 0 0 20px #ff5c8d !important;
-            filter: brightness(1.1);
+            animation: candy-pulse 0.5s infinite alternate; 
+            box-shadow: 0 0 25px #ff5c8d !important;
         }
-        @keyframes candy-bounce { from { transform: scale(1); } to { transform: scale(1.05); } }
+        @keyframes candy-pulse { from { transform: scale(1); } to { transform: scale(1.03); } }
 
-        /* 底部按鈕區 */
         #footer { padding: 20px; text-align: center; }
         #hint-text { color: #ff85a1; font-size: 18px; font-weight: bold; margin-bottom: 15px; min-height: 25px; }
         
@@ -80,7 +76,7 @@
     <div id="game-container"></div>
 
     <div id="footer">
-        <div id="hint-text">點點糖果棒可以轉向喔！🍭</div>
+        <div id="hint-text">輕點糖果棒旋轉，拼成方正的長方形喔！🍭</div>
         <button id="check-btn" onclick="checkWin()">包裝糖果 (檢查)</button>
         <button id="next-btn" style="display:none;" onclick="nextLevel()">做下一份！✨</button>
     </div>
@@ -106,40 +102,22 @@
             $("#game-container").empty();
             $("#next-btn").hide();
             $("#check-btn").show();
-            $("#hint-text").text("點點糖果棒可以轉向喔！🍭").css("color", "#ff85a1");
+            $("#hint-text").text("輕點糖果棒旋轉，拼成方正的長方形喔！🍭").css("color", "#ff85a1");
 
-            // 生成核心巧克力
-            $("<div class='block x2'>x²</div>")
-                .css({top: 40, left: 40})
-                .appendTo("#game-container");
+            $("<div class='block x2' id='main-x2'>x²</div>").css({top: 40, left: 40}).appendTo("#game-container");
 
-            // 生成糖果棒 x
             for(let i=0; i < (q.p + q.q); i++) {
                 let $x = $(`<div class="block x-tile x-v">x</div>`)
-                    .css({ 
-                        top: Math.random() * (ch - 150) + 50, 
-                        left: Math.random() * (cw - 200) + 150
-                    })
+                    .css({ top: Math.random()*(ch-150)+50, left: Math.random()*(cw-200)+150 })
                     .appendTo("#game-container");
                 bindCandyClick($x);
             }
 
-            // 生成小軟糖 1
             for(let i=0; i < (q.p * q.q); i++) {
-                $("<div class='block unit'>1</div>")
-                    .css({ 
-                        top: Math.random() * (ch - 100) + 50, 
-                        left: Math.random() * (cw - 200) + 150
-                    })
-                    .appendTo("#game-container");
+                $("<div class='block unit'>1</div>").css({top: Math.random()*(ch-100)+50, left: Math.random()*(cw-200)+150 }).appendTo("#game-container");
             }
 
-            $(".block").draggable({ 
-                containment: "parent", 
-                snap: ".block", 
-                snapTolerance: 15,
-                start: function() { $(this).css("z-index", 100); }
-            });
+            $(".block").draggable({ containment: "parent", snap: ".block", snapTolerance: 15 });
         }
 
         function bindCandyClick(el) {
@@ -148,6 +126,9 @@
             el.on('pointerup', function() {
                 if (Date.now() - startT < 200) {
                     $(this).toggleClass("x-v").toggleClass("x-h");
+                    // 旋轉時確保層級提升
+                    $(this).css("z-index", 100);
+                    setTimeout(() => $(this).css("z-index", 10), 200);
                 }
             });
         }
@@ -155,27 +136,18 @@
         function checkWin() {
             const q = levels[currentIdx];
             const v = $(".x-v").length, h = $(".x-h").length;
-            
             if ((v===q.p && h===q.q) || (v===q.q && h===q.p)) {
                 $(".block").addClass("win-glow").draggable("disable");
-                $("#hint-text").html(`🎉 甜點製作成功！(x + ${q.p})(x + ${q.q})`);
+                $("#hint-text").html(`🎉 甜點包裝成功！結果：(x + ${q.p})(x + ${q.q})`);
                 $("#next-btn").show();
                 $("#check-btn").hide();
-                // 噴灑糖果紙特效
-                confetti({
-                    particleCount: 100, spread: 70, origin: { y: 0.6 },
-                    colors: ['#ff6b6b', '#ffd93d', '#71b1ff', '#ff85a1']
-                });
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
             } else {
                 $("#hint-text").text(`哎呀！數量不對喔，需要 ${q.p}直 ${q.q}橫。`).css("color","#ff4d4d");
             }
         }
 
-        function nextLevel() {
-            currentIdx = (currentIdx + 1) % levels.length;
-            initLevel();
-        }
-
+        function nextLevel() { currentIdx = (currentIdx + 1) % levels.length; initLevel(); }
         $(window).on('load', initLevel);
     </script>
 </body>
