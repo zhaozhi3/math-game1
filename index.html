@@ -3,29 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>因式分解挑戰 - 手機優化版</title>
+    <title>因式分解 - 靈敏觸控版</title>
     <style>
-        /* 變數設定：手機上自動縮小尺寸 */
-        :root { --x-s: 70px; --u-s: 28px; }
+        :root { --x-s: 75px; --u-s: 30px; }
         @media (min-width: 600px) { :root { --x-s: 100px; --u-s: 40px; } }
 
         body { 
-            font-family: "Microsoft JhengHei", sans-serif; 
-            background: #ecf0f1; margin: 0; padding: 0;
-            overflow: hidden; /* 防止手機晃動 */
-            position: fixed; width: 100%; height: 100%;
+            font-family: sans-serif; background: #ecf0f1; margin: 0; padding: 0;
+            overflow: hidden; position: fixed; width: 100%; height: 100%;
+            touch-action: none; /* 徹底禁用瀏覽器預設手勢 */
         }
 
-        #stat-bar { 
-            background: #34495e; color: white; padding: 10px; 
-            display: flex; justify-content: space-around; font-size: 14px; 
-        }
-
+        #stat-bar { background: #34495e; color: white; padding: 10px; display: flex; justify-content: space-around; font-size: 14px; z-index: 100; position: relative; }
+        
         #game-container { 
             position: relative; width: 95vw; height: 65vh; 
-            margin: 5px auto; background: white; 
+            margin: 10px auto; background: white; 
             border: 2px solid #2c3e50; border-radius: 10px; 
-            overflow: hidden; touch-action: none; /* 重要：防止瀏覽器手勢干擾 */
+            overflow: hidden; 
         }
         
         .block { 
@@ -33,23 +28,21 @@
             justify-content: center; color: white; font-weight: bold; 
             border-radius: 4px; z-index: 10; user-select: none;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+            touch-action: none; /* 讓 jQuery UI Touch Punch 更好運作 */
         }
         .x2 { width: var(--x-s); height: var(--x-s); background: #3498db; }
         .unit { width: var(--u-s); height: var(--u-s); background: #e74c3c; }
-        .x-tile { background: #f1c40f; color: #333; }
+        .x-tile { background: #f1c40f; color: #333; transition: width 0.1s, height 0.1s; }
         .x-v { width: var(--u-s); height: var(--x-s); }
         .x-h { width: var(--x-s); height: var(--u-s); }
 
-        #hint-box { color: #e67e22; font-size: 14px; margin: 5px; height: 20px; font-weight: bold; }
-        #result-banner { font-size: 20px; color: #27ae60; font-weight: bold; height: 30px; }
+        #hint-box { color: #e67e22; font-size: 14px; margin: 5px; font-weight: bold; min-height: 20px; }
+        #result-banner { font-size: 20px; color: #27ae60; font-weight: bold; min-height: 30px; }
         
         .btn-group { display: flex; justify-content: center; gap: 10px; }
-        button { 
-            padding: 10px 20px; font-size: 16px; cursor: pointer; 
-            background: #2c3e50; color: white; border: none; border-radius: 5px;
-        }
+        button { padding: 12px 24px; font-size: 16px; cursor: pointer; background: #2c3e50; color: white; border: none; border-radius: 8px; }
 
-        .win-glow { animation: pulse 0.5s infinite alternate; border: 2px solid #fff; }
+        .win-glow { animation: pulse 0.5s infinite alternate; box-shadow: 0 0 15px #2ecc71 !important; }
         @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.05); } }
     </style>
 </head>
@@ -62,11 +55,11 @@
 
     <div id="game-container"></div>
 
-    <div id="hint-box">💡 點擊黃色方塊可旋轉</div>
+    <div id="hint-box">💡 輕觸黃色方塊即可旋轉</div>
     <div id="result-banner"></div>
 
     <div class="btn-group">
-        <button onclick="checkWin()">檢查</button>
+        <button id="check-btn" onclick="checkWin()">檢查</button>
         <button id="next-btn" style="display:none; background: #27ae60;" onclick="nextLevel()">下一題</button>
     </div>
 
@@ -79,58 +72,64 @@
             {p:2, q:1}, {p:3, q:1}, {p:2, q:2}, {p:4, q:1}, {p:3, q:2},
             {p:5, q:1}, {p:4, q:2}, {p:3, q:3}, {p:5, q:2}, {p:4, q:3}
         ];
-        let currentIdx = 0, seconds = 0;
+        let currentIdx = 0, seconds = 0, isDragging = false, startX, startY;
 
         function initLevel() {
             const q = levels[currentIdx];
-            const containerW = $("#game-container").width();
-            const containerH = $("#game-container").height();
+            const cw = $("#game-container").width();
+            const ch = $("#game-container").height();
 
             $("#target-eq").text(`x² + ${q.p + q.q}x + ${q.p * q.q}`);
             $("#game-container").empty();
             $("#result-banner").empty();
-            $("#hint-box").text("💡 點擊黃色方塊可旋轉").css("color", "#e67e22");
             $("#next-btn").hide();
+            $("#check-btn").show();
 
-            // 1. 生成 x2 (放在左上角附近)
-            $("<div class='block x2' id='main-x'>x²</div>").css({top: 20, left: 20}).appendTo("#game-container");
+            // 生成 x2
+            $("<div class='block x2'>x²</div>").css({top: 20, left: 20}).appendTo("#game-container");
 
-            // 2. 生成 x (限制在螢幕內)
+            // 生成 x (加入智慧旋轉判定)
             for(let i=0; i < (q.p + q.q); i++) {
-                $(`<div class="block x-tile x-v">x</div>`)
-                    .css({ 
-                        top: Math.random() * (containerH - 120) + 50, 
-                        left: Math.random() * (containerW - 100) + 50 
-                    })
-                    .appendTo("#game-container")
-                    .on('click', function() { $(this).toggleClass("x-v").toggleClass("x-h"); });
+                let $x = $(`<div class="block x-tile x-v">x</div>`)
+                    .css({ top: Math.random()*(ch-100)+20, left: Math.random()*(cw-80)+40 })
+                    .appendTo("#game-container");
+
+                // 靈敏點擊邏輯
+                $x.on('touchstart', function(e) {
+                    isDragging = false;
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                }).on('touchmove', function(e) {
+                    let moveX = Math.abs(e.touches[0].clientX - startX);
+                    let moveY = Math.abs(e.touches[0].clientY - startY);
+                    if(moveX > 5 || moveY > 5) isDragging = true; // 有位移就不算點擊
+                }).on('touchend', function() {
+                    if(!isDragging) {
+                        $(this).toggleClass("x-v").toggleClass("x-h");
+                    }
+                });
             }
 
-            // 3. 生成 1
+            // 生成 1
             for(let i=0; i < (q.p * q.q); i++) {
-                $("<div class='block unit'>1</div>")
-                    .css({ 
-                        top: Math.random() * (containerH - 80) + 50, 
-                        left: Math.random() * (containerW - 80) + 50 
-                    })
-                    .appendTo("#game-container");
+                $("<div class='block unit'>1</div>").css({top: Math.random()*(ch-50)+20, left: Math.random()*(cw-50)+40}).appendTo("#game-container");
             }
-            $(".block").draggable({ containment: "parent", snap: ".block", snapTolerance: 8 });
+
+            $(".block").draggable({ containment: "parent", snap: ".block", snapTolerance: 10 });
         }
 
         function checkWin() {
             const q = levels[currentIdx];
-            const vCount = $(".x-v").length;
-            const hCount = $(".x-h").length;
-
-            if ((vCount === q.p && hCount === q.q) || (vCount === q.q && hCount === q.p)) {
+            const v = $(".x-v").length, h = $(".x-h").length;
+            if ((v===q.p && h===q.q) || (v===q.q && h===q.p)) {
                 $(".block").addClass("win-glow").draggable("disable");
-                $("#hint-box").text("🎊 完美拼合！");
-                $("#result-banner").html(`答案：(x + ${q.p})(x + ${q.q})`);
+                $("#hint-box").text("🎊 完美！");
+                $("#result-banner").html(`(x + ${q.p})(x + ${q.q})`);
                 $("#next-btn").show();
+                $("#check-btn").hide();
             } else {
-                $("#hint-box").text(`❌ 提示：需 ${q.p} 直 ${q.q} 橫 (或反之)`);
-                $("#hint-box").css("color", "#e74c3c");
+                $("#hint-box").text(`❌ 需要 ${q.p}直${q.q}橫 (或反之)` ).css("color","#e74c3c");
+                setTimeout(()=>$("#hint-box").css("color","#e67e22"), 800);
             }
         }
 
